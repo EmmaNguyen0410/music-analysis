@@ -1,0 +1,254 @@
+date,mood,identifier,gender
+11/08/2022,6,Javier Pena,Male
+12/08/2022,6,Javier Pena,Male
+13/08/2022,7,Javier Pena,Male
+14/08/2022,8,Javier Pena,Male
+15/08/2022,6,Javier Pena,Male
+16/08/2022,7,Javier Pena,Male
+17/08/2022,6,Javier Pena,Male
+18/08/2022,7,Javier Pena,Male
+19/08/2022,7,Javier Pena,Male
+20/08/2022,8,Javier Pena,Male
+21/08/2022,4,Javier Pena,Male
+22/08/2022,7,Javier Pena,Male
+23/08/2022,8,Javier Pena,Male
+24/08/2022,7,Javier Pena,Male
+25/08/2022,7,Javier Pena,Male
+26/08/2022,8,Javier Pena,Male
+27/08/2022,7,Javier Pena,Male
+28/08/2022,6,Javier Pena,Male
+29/08/2022,9,Javier Pena,Male
+30/08/2022,9,Javier Pena,Male
+01/09/2022,6,Javier Pena,Male
+02/09/2022,5,Javier Pena,Male
+03/09/2022,5,Javier Pena,Male
+04/09/2022,4,Javier Pena,Male
+05/09/2022,7,Javier Pena,Male
+06/09/2022,6,Javier Pena,Male
+07/09/2022,6,Javier Pena,Male
+08/09/2022,7,Javier Pena,Male
+09/09/2022,7,Javier Pena,Male
+10/09/2022,7,Javier Pena,Male
+11/09/2022,6,Javier Pena,Male
+12/09/2022,7,Javier Pena,Male
+13/09/2022,5,Javier Pena,Male
+14/09/2022,6,Javier Pena,Male
+15/09/2022,7,Javier Pena,Male
+16/09/2022,8,Javier Pena,Male
+17/09/2022,9,Javier Pena,Male
+18/09/2022,6,Javier Pena,Male
+19/09/2022,7,Javier Pena,Male
+20/09/2022,7,Javier Pena,Male
+21/09/2022,8,Javier Pena,Male
+22/09/2022,9,Javier Pena,Male
+11/08/2022,5,Thyme,Male
+12/08/2022,4,Thyme,Male
+13/08/2022,5,Thyme,Male
+14/08/2022,4,Thyme,Male
+15/08/2022,6,Thyme,Male
+16/08/2022,5,Thyme,Male
+17/08/2022,7,Thyme,Male
+18/08/2022,6,Thyme,Male
+19/08/2022,7,Thyme,Male
+20/08/2022,6,Thyme,Male
+21/08/2022,5,Thyme,Male
+22/08/2022,4,Thyme,Male
+23/08/2022,4,Thyme,Male
+24/08/2022,5,Thyme,Male
+25/08/2022,4,Thyme,Male
+26/08/2022,5,Thyme,Male
+27/08/2022,6,Thyme,Male
+28/08/2022,6,Thyme,Male
+29/08/2022,6,Thyme,Male
+30/08/2022,5,Thyme,Male
+31/08/2022,4,Thyme,Male
+01/09/2022,5,Thyme,Male
+02/09/2022,4,Thyme,Male
+03/09/2022,4,Thyme,Male
+04/09/2022,5,Thyme,Male
+05/09/2022,6,Thyme,Male
+06/09/2022,6,Thyme,Male
+07/09/2022,6,Thyme,Male
+08/09/2022,7,Thyme,Male
+09/09/2022,5,Thyme,Male
+10/09/2022,6,Thyme,Male
+11/09/2022,6,Thyme,Male
+12/09/2022,4,Thyme,Male
+13/09/2022,4,Thyme,Male
+14/09/2022,5,Thyme,Male
+15/09/2022,6,Thyme,Male
+16/09/2022,6,Thyme,Male
+17/09/2022,8,Thyme,Male
+18/09/2022,9,Thyme,Male
+19/09/2022,7,Thyme,Male
+20/09/2022,7,Thyme,Male
+21/09/2022,6,Thyme,Male
+11/08/2022,6,Felix,Male
+12/08/2022,7,Felix,Male
+13/08/2022,5,Felix,Male
+14/08/2022,10,Felix,Male
+15/08/2022,7,Felix,Male
+16/08/2022,8,Felix,Male
+17/08/2022,8,Felix,Male
+18/08/2022,9,Felix,Male
+19/08/2022,6,Felix,Male
+20/08/2022,10,Felix,Male
+21/08/2022,9,Felix,Male
+22/08/2022,5,Felix,Male
+23/08/2022,6,Felix,Male
+24/08/2022,3,Felix,Male
+25/08/2022,1,Felix,Male
+26/08/2022,2,Felix,Male
+27/08/2022,5,Felix,Male
+28/08/2022,3,Felix,Male
+29/08/2022,6,Felix,Male
+30/08/2022,5,Felix,Male
+31/08/2022,4,Felix,Male
+01/09/2022,7,Felix,Male
+02/09/2022,8,Felix,Male
+03/09/2022,7,Felix,Male
+04/09/2022,9,Felix,Male
+05/09/2022,1,Felix,Male
+06/09/2022,3,Felix,Male
+07/09/2022,5,Felix,Male
+08/09/2022,7,Felix,Male
+09/09/2022,6,Felix,Male
+10/09/2022,8,Felix,Male
+11/09/2022,4,Felix,Male
+12/09/2022,9,Felix,Male
+13/09/2022,10,Felix,Male
+14/09/2022,8,Felix,Male
+15/09/2022,9,Felix,Male
+16/09/2022,10,Felix,Male
+17/09/2022,9,Felix,Male
+18/09/2022,6,Felix,Male
+19/09/2022,5,Felix,Male
+20/09/2022,3,Felix,Male
+21/09/2022,4,Felix,Male
+11/08/2022,5,Eren,Male
+12/08/2022,6,Eren,Male
+13/08/2022,7,Eren,Male
+14/08/2022,5,Eren,Male
+15/08/2022,5,Eren,Male
+16/08/2022,4,Eren,Male
+17/08/2022,8,Eren,Male
+18/08/2022,8,Eren,Male
+19/08/2022,6,Eren,Male
+20/08/2022,6,Eren,Male
+21/08/2022,7,Eren,Male
+22/08/2022,5,Eren,Male
+23/08/2022,9,Eren,Male
+24/08/2022,6,Eren,Male
+25/08/2022,5,Eren,Male
+26/08/2022,6,Eren,Male
+27/08/2022,7,Eren,Male
+28/08/2022,5,Eren,Male
+29/08/2022,8,Eren,Male
+30/08/2022,4,Eren,Male
+31/08/2022,3,Eren,Male
+01/09/2022,6,Eren,Male
+02/09/2022,5,Eren,Male
+03/09/2022,4,Eren,Male
+04/09/2022,7,Eren,Male
+05/09/2022,5,Eren,Male
+06/09/2022,7,Eren,Male
+07/09/2022,3,Eren,Male
+08/09/2022,5,Eren,Male
+09/09/2022,4,Eren,Male
+10/09/2022,6,Eren,Male
+11/09/2022,5,Eren,Male
+12/09/2022,5,Eren,Male
+13/09/2022,7,Eren,Male
+14/09/2022,2,Eren,Male
+15/09/2022,3,Eren,Male
+16/09/2022,2,Eren,Male
+17/09/2022,3,Eren,Male
+18/09/2022,5,Eren,Male
+19/09/2022,7,Eren,Male
+20/09/2022,8,Eren,Male
+21/09/2022,9,Eren,Male
+22/09/2022,9,Eren,Male
+11/08/2022,4,Arnald,Female
+12/08/2022,5,Arnald,Female
+13/08/2022,3,Arnald,Female
+14/08/2022,5,Arnald,Female
+15/08/2022,4,Arnald,Female
+16/08/2022,5,Arnald,Female
+17/08/2022,3,Arnald,Female
+18/08/2022,4,Arnald,Female
+19/08/2022,3,Arnald,Female
+20/08/2022,5,Arnald,Female
+21/08/2022,6,Arnald,Female
+22/08/2022,6,Arnald,Female
+23/08/2022,6,Arnald,Female
+24/08/2022,6,Arnald,Female
+25/08/2022,7,Arnald,Female
+26/08/2022,6,Arnald,Female
+27/08/2022,5,Arnald,Female
+28/08/2022,3,Arnald,Female
+29/08/2022,4,Arnald,Female
+30/08/2022,3,Arnald,Female
+31/08/2022,4,Arnald,Female
+01/09/2022,3,Arnald,Female
+02/09/2022,4,Arnald,Female
+03/09/2022,4,Arnald,Female
+04/09/2022,4,Arnald,Female
+05/09/2022,5,Arnald,Female
+06/09/2022,4,Arnald,Female
+07/09/2022,4,Arnald,Female
+08/09/2022,3,Arnald,Female
+09/09/2022,4,Arnald,Female
+10/09/2022,4,Arnald,Female
+11/09/2022,3,Arnald,Female
+12/09/2022,4,Arnald,Female
+13/09/2022,3,Arnald,Female
+14/09/2022,4,Arnald,Female
+15/09/2022,4,Arnald,Female
+16/09/2022,4,Arnald,Female
+17/09/2022,4,Arnald,Female
+18/09/2022,4,Arnald,Female
+19/09/2022,3,Arnald,Female
+20/09/2022,3,Arnald,Female
+21/09/2022,3,Arnald,Female
+11/08/2022,4,Phoenix,Female
+12/08/2022,3,Phoenix,Female
+13/08/2022,2,Phoenix,Female
+14/08/2022,2,Phoenix,Female
+15/08/2022,9,Phoenix,Female
+16/08/2022,10,Phoenix,Female
+17/08/2022,8,Phoenix,Female
+18/08/2022,7,Phoenix,Female
+19/08/2022,7,Phoenix,Female
+20/08/2022,10,Phoenix,Female
+21/08/2022,8,Phoenix,Female
+22/08/2022,7,Phoenix,Female
+23/08/2022,6,Phoenix,Female
+24/08/2022,5,Phoenix,Female
+25/08/2022,5,Phoenix,Female
+26/08/2022,4,Phoenix,Female
+27/08/2022,3,Phoenix,Female
+28/08/2022,1,Phoenix,Female
+29/08/2022,3,Phoenix,Female
+30/08/2022,10,Phoenix,Female
+31/08/2022,10,Phoenix,Female
+01/09/2022,8,Phoenix,Female
+02/09/2022,8,Phoenix,Female
+03/09/2022,6,Phoenix,Female
+04/09/2022,5,Phoenix,Female
+05/09/2022,4,Phoenix,Female
+06/09/2022,7,Phoenix,Female
+07/09/2022,6,Phoenix,Female
+08/09/2022,5,Phoenix,Female
+09/09/2022,4,Phoenix,Female
+10/09/2022,2,Phoenix,Female
+11/09/2022,10,Phoenix,Female
+12/09/2022,8,Phoenix,Female
+13/09/2022,7,Phoenix,Female
+14/09/2022,7,Phoenix,Female
+15/09/2022,9,Phoenix,Female
+16/09/2022,8,Phoenix,Female
+17/09/2022,6,Phoenix,Female
+18/09/2022,7,Phoenix,Female
+19/09/2022,6,Phoenix,Female
+20/09/2022,5,Phoenix,Female
+21/09/2022,4,Phoenix,Female

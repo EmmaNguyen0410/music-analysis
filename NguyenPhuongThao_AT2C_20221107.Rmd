@@ -1,0 +1,1089 @@
+---
+title: "Moods, Songs, and Expenses for recommendation systems"
+author: "Nguyen Phuong Thao"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  bookdown::html_document2:
+    fig_caption: yes
+    force_captions: yes
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+    collapsed: yes
+    highlight: pygments
+    number_sections: yes
+    df_print: kable
+    code_folding: hide
+    theme:
+      version: 4
+editor_options:
+  chunk_output_type: inline
+bibliography: ["packages.bib","references.bib"]
+link-citations: true
+---
+
+<!-- <style> -->
+<!-- body { -->
+<!-- text-align: justify} -->
+<!-- </style> -->
+
+```{r setup, include=FALSE}
+#install.packages("pacman")
+#ignore this chunk
+library(pacman)
+library(tidytext)
+library(tibble)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(tidyverse)
+library(writexl)
+library(ggplot2)
+library(plotly)
+library(corrplot)
+p_load(bs4cards, tidyverse, here, bslib, emo)
+
+```
+
+```{r global-options, include=FALSE}
+#ignore this chunk
+knitr::opts_chunk$set(fig.width=8, fig.height=5, fig.path='Figs/', fig.align = "center",
+                      echo=FALSE, warning=FALSE, message=FALSE)
+#don't print warnings or messages to output, but do include the code chunks (collapsed by default)
+
+```
+
+# Introduction
+
+## Problem Definition: Understanding People And Data
+
+With the breakthroughs in data science and machine learning, the most popular platforms such as Spotify, Amazon, Youtube, etc. are using recommendation systems to personalize their user's experience, which offers significant value to both consumers and firms. For consumers, these systems help them reduce the effort of searching for appropriate products among large number of options. The efficiency of these systems is proved by the fact that 60% of choices on Netflix and 35% of sales on Amazon originate from recommendations (Lee et al., 2012). For firms, these systems promote their sales, and establish trust from users. Personalisation is stated to play an important role in success of top e-commerce company. Inspired by recommendation systems' huge benefits, this qualified-self (QS) project harnesses the power of personal data to have insights into behaviors and preferences of people, which could be used to develop or improve these systems.
+
+There are different factors determining what songs users listen or what products they purchase. For example, as human, we all go through ups and downs in life, which changes our moods on a daily basis. These moods can have a significant impact on our behavior such as music listening, or purchasing goods. Besides, people of the same ages or gender can share common tastes in music or habits of spending. Hence, our group collected and analysed three datasets including songs, expenses, and moods to explore:
+
+* Patterns of song listening.
+* Patterns of expenses.
+* Relationship between mood and songs/expenses.
+
+The finding is used to examine above assumptions as well as check against findings from other research.
+
+Apart from data collected by group, an individual data is also collected and analysed to find the relationship between users' moods and features of songs that they listen to such as danceability, energy, etc.
+
+## Data Understanding and Investigation
+
+### Group data
+```{r}
+knitr::include_graphics(here::here("AT2_default_template/data/group_collection_summary.png"), dpi = NA)
+```
+
+**Rationale:**
+
+-   While automated tools require members to have certain technical skills, logging manually is easy and no training needed.
+-   We agreed to score our mood once a day and collect 3 songs/day, which is straightforward and fast. Therefore, running a tool or app to track is not really necessary in this case.
+-   Avoid subjectivity: Whether a song is happy or sad is a personal perspective. Therefore, our team agreed to use R/Python libraries to analyse sentiment of songs via their lyrics, which provides objective outputs.
+-   For expenses, it is preferable to download file from bank account. This passive approach ensures that members do not miss out any transaction in a day.
+-   Although manual log is not recommended, it is the only option for members who do not have bank a card (this is due to their first time to create bank account in Sydney and the delay of card delivery).
+-   Data Consistency: all members get lyrics from the same source, which means they have a consistent lyrics content and format. For example, in all lyrics returned by Genius API, burning is *burnin'*, running is *runnin'*, etc. As a result, each member can use there own code to process lyrics for the entire group dataset.
+
+**Issues:**
+
+-   Human error: Data is prone to error because anyone could make a mistake when copying information from external sources and pasting to our Googlesheet.
+-   Missing data: There might be dozens of expenses a day, so recording all of them manually is very arduous and inefficient. There might be some transactions missed out.
+-   Sentimental analysis accuracy: Using tools to score sentiment of each song can guarantee an objectiveness, which facilitates comparison and data merging process. However, we have to accept the accuracy trade-off. A song can have different meanings to different people (it may be positive to one but negative to others).
+-   Hawthorne effect: The Hawthorne effect is a type of reactivity in which individuals modify an aspect of their behavior in response to their awareness of being observed (Schwartz et al., 2013). Member may intentionally manipulate their data.
+-   There is a concern about accuracy of sentimental analysis library such as nltk, bing, afinn, etc.
+
+### Individual Data
+
+```{r}
+knitr::include_graphics(here::here("AT2_default_template/data/individual_collection_summary.png"), dpi = NA)
+```
+
+**Rationale:**
+
+-   Ease of collection: By using scheduler, a larger amount of songs can be collected with ease.
+-   Avoid human error: No manual steps needed, all steps including collecting list of songs, randomly picking 5 songs, getting song features, and store in excel file are done automatically by Python program, which guarantees better data quality.
+-   Reduce Hawthorne effect: Aware of being observed, a subject can manipulate the research results as they want. To mitigate this (not entirely), the automated collection picks up 5 songs from a list of song so that a subject do not know what songs will be collected for research.
+
+**Issue:**
+
+-   Despite above significant advantages, it is apparent that building a Python application like this take a long time (depending on the expertise of researcher). Therefore, it is only recommended for people who are familiar with coding and tools.
+
+### External Cohort Data
+
+The research also performed analysis on cohort data. There are two cohort data collected: average weekly expenditure of a lone under 35 in NSW (Australian Bureau of Statistics, 2015-16) and music peak preference by age (Stephens-Davidowitz, n.d). These are considered reliable data because they were published by Australian Bureau of Statistics and Spotify. While the former is used to compare against findings in Group expense data, the latter is used to compare against analysis of Group song data.  
+
+## Preparing the Data
+
+Data quality is assessed with reference to The Quarzt guide to bad data (Yanofsky, 2018). There are several issues identified in the datasets, which could be classified by their level of impact.
+
+**Resolved issues thereby having no impact on quality:**
+
+- Data are missing you know should be there: In Group expense data, there are some dates when people did not have any expenses, which make the date column become non-sequential (72/511 records). Because this can break the data visualization and analysis results, missing dates are added with amount *0* and expense type *No spend*.
+- Spelling is inconsistent: In Group expense date, *Tranportation* expense type has a duplicate value *Tranport* (2/512 records, Appendix D), which can cause an inaccurate analysis result. Therefore, all *Transport* are converted to *Transportation*.
+- Outlier: There are some outliers in dataset which are caused by human errors. In Group song data, dates are not between 8/2022 and 9/2022 (2/707 records, Appendix E) and release date is after 2022 (1/707 record, Appendix F). 
+- Time format is inconsistent: In Group song data, some duration values are in HH:MM:SS format while others are in MM:SS format, which hinders data processing. Googlesheet is used to reformat the date column. 
+
+**Minimal impact:**
+
+- Number of female and male are not equal (4 males and 2 females), which can result in unfair comparison. To minimize its effect, sum amount of each gender would not be used for comparison. Measurements like average or proportion is used when grouping the amount by gender.
+
+**Serious impact:** 
+
+- In Group song data, there are some instrumental pieces of music that do not have lyrics, which are all scored 0 by the sentiment analysis. However, despite having no lyrics, music still expresses sentiment through its tempo, loudness, keys, chords, etc. Hence, Felix is not included in song sentiment analysis.
+- Limited number of songs: According to statistics of Ferjan (2022), an average listens to about 53 songs/day. As the result, calculating the overall sentiment score by date is likely to be inaccurate. Because the result becomes wrong if three chosen songs are negative while the rest of 50 songs are positive. 
+
+**Inestimable** 
+
+- The sentiment analysis is based on unigrams - the sentiment is calculated by adding up score/category assigned to each word of the text. The accuracy of this approach is questioned for several reasons. First, there is need to determine an appropriate size of text to analyze because positive and negative sentiments can be averaged out to about zero with large text (Silge et al., 2022). Second, using unigrams means that you are breaking structure of sentences and losing the context of lexicons. Third, this approach might struggle with irony or sarcasm in which people use positive words to express negativity. In one study, performance of regular sentiment systems on sarcastic tweets dropped by 25%-70% (Weitzel et al., 2016). Other accuracy concerns of sentiment analysis such as colloquialisms, domain-specific, etc. are also discussed by Mohammad (2017) and Roldós (2020).
+- Another cause of inaccuracy might be self-awareness of self-reporting. In a study of Hawthorne effect by Schwartz et al. (2013), monthly electricity usage was reduced by 2.7% when residential consumers received weekly postcards notifying them about their participation in a study. Similarly, awareness of being observed can result in people reducing their expenses or listening to songs aligned with their moods.
+
+# Analysis
+
+For Group, Song and Expense datasets are analysed separately then each of them is combined with Moods dataset to find relationships. 
+For Individual, Song dataset with Spotify variables is combined with Moods dataset to have deeper insights into relation between songs and moods as well as compare with analysis results from group data.
+
+## Insights into Songs - Group 
+```{r }
+# load group song data and clean
+songs <- read_csv("data/music.csv")
+
+# reformat date
+songs$date <- as.Date(songs$date,
+                    format = "%d/%m/%Y")
+
+songs$release_date <- as.Date(songs$release_date,
+                    format = "%d/%m/%Y")
+
+# reformat duration
+songs$duration <- as.character(songs$duration)
+
+convert_duration <- function(duration) {
+  split_duration <- strsplit(duration, ":")[[1]]
+  duration_min <- strtoi(split_duration[1], base=10L) * 60 + strtoi(split_duration[2], base=10L)
+  duration_min
+}
+songs <- songs %>% mutate(duration_min = purrr::map_dbl(duration, convert_duration))
+
+# remove invalid release date
+songs <- filter(songs, release_date <= Sys.Date())
+
+# amend input errors
+songs$date[songs$date <= "2022-01-01"] <- "2022-08-17"
+songs <- songs %>% filter(date <= "2022-09-21" & date >= "2022-08-17")
+
+# sentimental analysis: add sentiment score to songs
+calculate_sentiment <- function(lyrics) {
+  df1 <- data.frame(lyrics)
+  df2 <- df1 %>%
+    unnest_tokens(word, lyrics)
+  by_word <- df2 %>%
+    group_by(word) %>%
+    summarise(
+      count = n()
+    )
+  bing <- by_word %>%
+    inner_join(get_sentiments("bing"), by="word")
+  sum_negative = sum(filter(bing, sentiment=="negative")$count)
+  sum_positive = sum(filter(bing, sentiment=="positive")$count)
+  score = sum_positive - sum_negative
+  score
+}
+
+songs <- songs %>% mutate(formatted_lyrics = lyrics %>% 
+                    str_replace_all("'til", "until") %>%
+                    str_replace_all("'cause", "because") %>%
+                    str_replace_all("in'", "ing") %>%
+                    str_replace_all("'em", "them")
+                  )  %>% 
+                  mutate(score = purrr::map_dbl(formatted_lyrics,calculate_sentiment)) 
+
+# add sentiment type to songs
+songs$sentiment[songs$score < 0] <- "negative" 
+songs$sentiment[songs$score == 0] <- "neutral"
+songs$sentiment[songs$score > 0] <- "positive"
+
+# split songs by identifier
+songs_javier <- filter(songs, identifier=="Javier Pena")
+songs_thyme <- filter(songs, identifier=="Thyme")
+songs_felix <- filter(songs, identifier=="Felix")
+songs_eren <- filter(songs, identifier=="Eren")
+songs_arnald <- filter(songs, identifier=="Arnald")
+songs_phoenix <- filter(songs, identifier=="Phoenix")
+
+# calculate overall sentiment score by identifier and date
+songs_by_date_javier <- songs_javier %>% 
+  group_by(date) %>% 
+  summarise(score_by_date = sum(score)) %>%
+  mutate(identifier = "Javier Pena") %>%
+  mutate(gender = "Male")
+songs_by_date_thyme <- songs_thyme %>% 
+  group_by(date) %>% 
+  summarise(score_by_date = sum(score)) %>%
+  mutate(identifier = "Thyme") %>% 
+  mutate(gender = "Male")
+songs_by_date_felix <- songs_felix %>% 
+  group_by(date) %>% 
+  summarise(score_by_date = sum(score)) %>%
+  mutate(identifier = "Felix") %>% 
+  mutate(gender = "Male")
+songs_by_date_eren <- songs_eren %>% 
+  group_by(date) %>% 
+  summarise(score_by_date = sum(score)) %>%
+  mutate(identifier = "Eren") %>% 
+  mutate(gender = "Male")
+songs_by_date_arnald <- songs_arnald %>% 
+  group_by(date) %>% 
+  summarise(score_by_date = sum(score)) %>%
+  mutate(identifier = "Arnald") %>% 
+  mutate(gender = "Female")
+songs_by_date_phoenix <- songs_phoenix %>% 
+  group_by(date) %>% 
+  summarise(score_by_date = sum(score)) %>%
+  mutate(identifier = "Phoenix") %>%
+  mutate(gender = "Female")
+
+```
+
+According to Davies et al. (2022), although music peak preferences vary, a large number of individuals prefer music released in their mid-to-late teens (15 - 19) most, and prefer music released earlier or later in their lives least. However, Figure \@ref(fig:age-release-date) indicates a different trend - only 25% of songs that people listen to were released when they were in teens, 75% of songs were released after they were in twenties. Besides, in most cases, the release date range becomes larger when the age increases, which can be explained by the fact that older people listen to songs earlier. Moreover, some outliers indicate the that people still listen to songs released very early and even before they were born.  
+
+```{r age-release-date, fig.cap="Age vs Release date."}
+# Age vs release date: x is age increase, y is boxplot
+release_date_distribution_by_age <- plot_ly(y = ~songs$release_date[songs$identifier == "Phoenix"], type = "box", name = "23") %>% 
+  add_boxplot(y = ~songs$release_date[songs$identifier == "Eren"], type = "box", name = "24") %>% 
+  add_boxplot(y = ~songs$release_date[songs$identifier == "Thyme"], type = "box", name = "27") %>% 
+  add_boxplot(y = ~songs$release_date[songs$identifier == "Arnald"], type = "box", name = "28") %>% 
+  add_boxplot(y = ~songs$release_date[songs$identifier == "Javier Pena"], type = "box", name = "30") %>% 
+  add_boxplot(y = ~songs$release_date[songs$identifier == "Felix"], type = "box", name = "32") %>% 
+  layout(title = list(text = "<b>Age vs Release date</b>"), xaxis = list(type = 'category', title = "Age"), yaxis = list(title = "Release date"), legend=list(title = list(text="<b> Age </b>")))
+release_date_distribution_by_age
+```
+
+
+Figure \@ref(fig:duration-distribution) reveals that Females have more narrow range of song duration (around 145 - 309 minutes) and outliers show that the maxiumn of song length is just 377 minutes. Meanwhile, males have broader range of duration (around 85 - 367 minutes) and they listen to songs with long duration (400 - 600 mins). 
+
+```{r duration-distribution, fig.cap="Distribution of song duration."}
+# Distribution of duration of each person
+duration_distribution <- plot_ly(songs, y = ~duration_min, x = ~identifier, color = ~gender, type = "box") %>% 
+  layout(title = list(text = "<b>Distribution of song duration</b>"), xaxis = list(title = "Identifier"), yaxis = list(title = "Duration in minutes"), legend=list(title = list(text="<b> Gender </b>")))
+duration_distribution
+```
+
+Based on Figure \@ref(fig:genres-age), younger members listen to more song genres compared with older members. However, a common trend can be seen from the figure - the most favorite song genres is either Pop or Indie, except for Felix who prefer Newage most. This can be explained by the fact that all members years of birth are from 1990 to 1999, an era of Pop and Indie.
+
+```{r genres-age, fig.cap="Genre popularity by age."}
+# Popular genres of each age -> donut chart
+annotations <- list(
+  list(
+    x = 0.2,
+    y = 0.85,
+    text = "<b>23</b>",
+    showarrow = FALSE
+  ),
+  list(
+    x = 0.79,
+    y = 0.85,
+    text = "<b>24</b>",
+    showarrow = FALSE
+  ),
+  list(
+    x = 0.2,
+    y = 0.5,
+    text = "<b>27</b>",
+    showarrow = FALSE
+  ),
+  list(
+    x = 0.79,
+    y = 0.5,
+    text = "<b>28</b>",
+    showarrow = FALSE
+  ),
+  list(
+    x = 0.2,
+    y = 0.14,
+    text = "<b>30</b>",
+    showarrow = FALSE
+  ),
+  list(
+    x = 0.79,
+    y = 0.14,
+    text = "<b>32</b>",
+    showarrow = FALSE
+  )
+)
+
+genre_popularity_by_age <- plot_ly() %>%
+  add_pie(data = count(songs_phoenix, genre), label=~genre, values = ~n, name="Phoenix", hole = 0.6, domain = list(row = 0, column = 0), textposition='inside', showlegend=FALSE) %>% 
+  add_pie(data = count(songs_eren, genre), label=~genre, values = ~n, name="Eren", hole = 0.6, domain = list(row = 0, column = 1), textposition='inside', showlegend=FALSE) %>%
+  add_pie(data = count(songs_thyme, genre), label=~genre, values = ~n, name="Thyme", hole = 0.6, domain = list(row = 1, column = 0), textposition='inside', showlegend=FALSE) %>%
+  add_pie(data = count(songs_arnald, genre), label=~genre, values = ~n, name="Arnald", hole = 0.6, domain = list(row = 1, column = 1), textposition='inside', showlegend=FALSE) %>%
+  add_pie(data = count(songs_javier, genre), label=~genre, values = ~n, name="Javier", hole = 0.6, domain = list(row = 2, column = 0), textposition='inside', showlegend=FALSE) %>%
+  add_pie(data = count(songs_felix, genre), label=~genre, values = ~n, name="Felix", hole = 0.6, domain = list(row = 2, column = 1), textposition='inside', showlegend=FALSE) %>%
+  layout(title = "<b>Genre popularity by age</b>", 
+         annotations = annotations,
+         grid = list(rows=3, columns=2))
+genre_popularity_by_age
+```
+
+Statistical analysis conducted by Xu et al. (2021) found that males prefer sad songs than female. Similarly, Figure  \@ref(fig:happy-sad-gender) also illustrates that women listens to positive songs more than negative songs while it is opposite for men. However, Figure \@ref(fig:sentiment-gender) reveals that both song sentiments of both males and females experienced fluctuation within a month. 
+
+```{r sentiment-gender, fig.cap="Song sentiment score by gender."}
+# sentiment vs date (by gender) -> subplot scatter (remove Felix)
+# sentiment_through_date
+annotations = list( 
+  list( 
+    x = 0.1,  
+    y = 1.0,  
+    text = "<b> Female </b>",  
+    xref = "paper",  
+    yref = "paper",  
+    xanchor = "center",  
+    yanchor = "bottom",  
+    showarrow = FALSE 
+  ),  
+  list( 
+    x = 0.1,  
+    y = 0.4,  
+    text = "<b> Male </b>",  
+    xref = "paper",  
+    yref = "paper",  
+    xanchor = "center",  
+    yanchor = "bottom",  
+    showarrow = FALSE 
+  ))
+sentiment_through_date_female <- plot_ly(songs_by_date_phoenix, x = ~songs_by_date_phoenix$date, y = ~songs_by_date_phoenix$score_by_date, name = "phoenix", type = "scatter", mode = "markers") %>%
+  add_trace(y = ~songs_by_date_arnald$score_by_date, name = "arnald", type = "scatter", mode = "markers") %>% 
+  layout(yaxis = list(title = list(text = "sentiment score")))
+sentiment_through_date_male <- plot_ly(songs_by_date_javier, x = ~songs_by_date_javier$date, y = ~songs_by_date_javier$score_by_date, name = "javier", type = "scatter", mode = "markers") %>%
+  add_trace(y = ~songs_by_date_thyme$score_by_date, name = "thyme", type = "scatter", mode = "markers") %>%
+  add_trace(y = ~songs_by_date_eren$score_by_date, name = "eren", type = "scatter", mode = "markers") %>%
+  layout(yaxis = list(title = list(text = "sentiment score")))
+sentiment_through_date_all <- subplot(sentiment_through_date_female, sentiment_through_date_male, nrows = 2, titleY = TRUE, titleX = FALSE, margin = 0.1) %>%
+  layout(annotations = annotations, title = list(text = "<b> Sentiment score by gender </b>"),legend=list(title = list(text="<b> Identifier </b>")))
+sentiment_through_date_all
+```
+
+
+```{r happy-sad-gender, fig.cap="Number of positive songs and negative songs."}
+# Number of sad song vs happy songs of each gender -> bar (remove Felix)
+sad_songs <- filter(songs, score < 0 & identifier != "Felix") %>% 
+  group_by(identifier) %>%
+  summarise(
+    sad = n()
+  )
+
+happy_songs <- filter(songs, score > 0 & identifier != "Felix") %>% 
+  group_by(identifier) %>%
+  summarise(
+    happy = n()
+  )
+
+sad_happy_songs <- sad_songs %>% inner_join(happy_songs, by = "identifier")
+sad_happy_count <- plot_ly(sad_happy_songs, x = ~identifier, y = ~sad, type = 'bar', name = 'Sad',
+               marker = list(color = 'rgb(55, 83, 109)')) %>% 
+  add_trace(y = ~happy, name = 'Happy', marker = list(color = 'rgb(26, 118, 255)')) %>%
+  layout(title = list(text = "<b>Number of positive songs and negative songs</b>"), xaxis = list("Identifier") , yaxis = list(title = "Count"), legend=list(title = list(text="<b> Song type </b>")))
+sad_happy_count
+```
+
+
+## Insights into Expenses - Group
+
+```{r}
+# load expense data
+expenses <- read_csv("data/expense.csv")
+expenses$date <- as.Date(expenses$date,
+                      format = "%d/%m/%Y")
+expenses <- expenses %>% filter(date <= "2022-09-21" & date >= "2022-08-15")
+expenses$amount <- -expenses$amount
+
+all_unique_dates = seq(as.Date("2022-08-15"), as.Date("2022-09-21"), by = "day")
+unique_dates_by_identifier <- expenses %>% group_by(identifier) %>% 
+  summarise(unique_date = unique(date)) 
+expenses$type[expenses$type == "Transport"] <- "Transportation"
+identifiers = c("Felix", "Javier Pena", "Thyme", "Eren", "Arnald", "Phoenix")
+
+# add no spent dates 
+missing_dates_javier = as.Date(setdiff(all_unique_dates,  filter(unique_dates_by_identifier, identifier == "Javier Pena")$unique_date), origin = "1970-01-01")
+expenses <- bind_rows(expenses, data.frame(date = missing_dates_javier, 
+                                           identifier = rep("Javier Pena", 
+                                                            times = length(missing_dates_javier)),
+                                           amount = rep(0, times = length(missing_dates_javier)),
+                                           type = rep("No spend", times = length(missing_dates_javier)),
+                                           gender = rep("Male", times = length(missing_dates_javier))
+                                           ))
+missing_dates_felix = as.Date(setdiff(all_unique_dates,  filter(unique_dates_by_identifier, identifier == "Felix")$unique_date), origin = "1970-01-01")
+expenses <- bind_rows(expenses, data.frame(date = missing_dates_felix, 
+                                           identifier = rep("Felix", 
+                                                            times = length(missing_dates_felix)),
+                                           amount = rep(0, times = length(missing_dates_felix)),
+                                           type = rep("No spend", times = length(missing_dates_felix)),
+                                           gender = rep("Male", times = length(missing_dates_felix))
+))
+missing_dates_thyme = as.Date(setdiff(all_unique_dates,  filter(unique_dates_by_identifier, identifier == "Thyme")$unique_date), origin = "1970-01-01")
+expenses <- bind_rows(expenses, data.frame(date = missing_dates_thyme, 
+                                           identifier = rep("Thyme", 
+                                                            times = length(missing_dates_thyme)),
+                                           amount = rep(0, times = length(missing_dates_thyme)),
+                                           type = rep("No spend", times = length(missing_dates_thyme)),
+                                           gender = rep("Male", times = length(missing_dates_thyme))
+))
+missing_dates_eren = as.Date(setdiff(all_unique_dates,  filter(unique_dates_by_identifier, identifier == "Eren")$unique_date), origin = "1970-01-01")
+expenses <- bind_rows(expenses, data.frame(date = missing_dates_eren, 
+                                           identifier = rep("Eren", 
+                                                            times = length(missing_dates_eren)),
+                                           amount = rep(0, times = length(missing_dates_eren)),
+                                           type = rep("No spend", times = length(missing_dates_eren)),
+                                           gender = rep("Male", times = length(missing_dates_eren))
+))
+missing_dates_arnald = as.Date(setdiff(all_unique_dates,  filter(unique_dates_by_identifier, identifier == "Arnald")$unique_date), origin = "1970-01-01")
+expenses <- bind_rows(expenses, data.frame(date = missing_dates_arnald, 
+                                           identifier = rep("Arnald", 
+                                                            times = length(missing_dates_arnald)),
+                                           amount = rep(0, times = length(missing_dates_arnald)),
+                                           type = rep("No spend", times = length(missing_dates_arnald)),
+                                           gender = rep("Female", times = length(missing_dates_arnald))
+))
+missing_dates_phoenix = as.Date(setdiff(all_unique_dates,  filter(unique_dates_by_identifier, identifier == "Phoenix")$unique_date), origin = "1970-01-01")
+expenses <- bind_rows(expenses, data.frame(date = missing_dates_phoenix, 
+                                           identifier = rep("Phoenix", 
+                                                            times = length(missing_dates_phoenix)),
+                                           amount = rep(0, times = length(missing_dates_phoenix)),
+                                           type = rep("No spend", times = length(missing_dates_phoenix)),
+                                           gender = rep("Female", times = length(missing_dates_phoenix))
+))
+
+# order by identifier and date
+expenses <- arrange(expenses, identifier, date)
+expenses_by_date <- expenses %>% group_by(identifier, date)  %>% summarise(total_amount = sum(amount))
+
+```
+
+Figure \@ref(fig:expense-date) demonstrates the expense of members over a month. It reveals that although members have varied amount of expenses, their expenses witnessed a certain seasonality, which is showed by significant increases in expense at specific points of time. Thyme had a tendency to spend more at every start of the week. Phoenix spent more on every Friday. Javier and Felix spent more in every middle of a week. Others member spent more every Friday-Monday. 
+
+```{r expense-date, fig.cap="Expense amount during a month."}
+# Expense amount vs time (group by gender) -> subplot circle
+expenses_through_date <- plot_ly(expenses_by_date, x = ~date, y = ~identifier, type = "scatter", mode = "markers", marker = list(size = ~total_amount/15, opacity =0.5)) %>%
+  layout(title = list(text = "Expense amount vs date"))
+expenses_through_date
+```
+
+
+In Figure \@ref(fig:expense-distribution), the amount spent on each time of purchasing was normally less $100 among all members. However, 25% of Phoenix's purchases were more than $200. This can be explained by the fact that Phoenix's first arrival to Australia was from Aug 11 while others had already lived in Australia for at least 1 month. Besides, outliers indicate that Felix, Phoenix and Thyme had several large purchases ($390 - $1100). It suggests that members having fulltime/parttime jobs are likely to spend larger amount of money. 
+
+```{r expense-distribution, fig.cap="Distribution of expense amount."}
+# Distribution of expense amount (grouped by gender) -> violin
+expenses_distribution <- expenses_by_date %>%
+  plot_ly(
+    x = ~identifier,
+    y = ~total_amount,
+    split = ~identifier,
+    type = 'violin',
+    box = list(
+      visible = T
+    ),
+    meanline = list(
+      visible = T
+    )
+  ) %>%
+  layout(
+    xaxis = list(
+      title = "Identifier"
+    ),
+    yaxis = list(
+      title = "Total expense amount",
+      zeroline = F
+    )
+  ) %>% 
+  layout(title = list(text = "<b>Distribution of expense amount</b>"))
+
+expenses_distribution
+```
+
+
+Figure \@ref(fig:percent-expense-gender) reveals the percentage of expenses for each type by gender. It can be seen that both males and females share a common spending behavior. The expense types from most spent to least spent: Groceries -> Utilities -> Transportation -> Medical. 
+
+```{r percent-expense-gender, fig.cap="Percentage of expense type by gender."}
+# Percentage of expense amount (grouped by gender and categories) -> bar chart multi
+expenses_by_gender_type = expenses %>% group_by(gender, type) %>% summarise(total_amount = sum(amount))
+gender <- c('Female',
+       'Male')
+utilities_percent <- c(51.5, 65.9)
+groceries_percent <-c(41.5, 28)
+transportation_percent <- c(5.14, 4.7)
+medical_percent <- c(1.86, 1.4)
+
+data <- data.frame(gender, utilities_percent, groceries_percent, transportation_percent, medical_percent)
+
+top_labels <- c('Utilities', 'Groceries', 'Transportation', 'Medical')
+
+percent_type_by_gender <- plot_ly(data, name = "Utilities", x = ~utilities_percent, y = ~gender, type = 'bar', orientation = 'h',
+               marker = list(color = 'rgba(38, 24, 74, 0.8)',
+                             line = list(color = 'rgb(248, 248, 249)', width = 1))) 
+percent_type_by_gender <- percent_type_by_gender %>% add_trace(name = "Groceries", x = ~groceries_percent, marker = list(color = 'rgba(71, 58, 131, 0.8)')) 
+percent_type_by_gender <- percent_type_by_gender %>% add_trace(name = "Transportation", x = ~transportation_percent, marker = list(color = 'rgba(122, 120, 168, 0.8)')) 
+percent_type_by_gender <- percent_type_by_gender %>% add_trace(name = "Medical", x = ~medical_percent, marker = list(color = 'rgba(164, 163, 204, 0.85)')) 
+percent_type_by_gender <- percent_type_by_gender %>% layout(xaxis = list(title = "",
+                                   showgrid = FALSE,
+                                   showline = FALSE,
+                                   showticklabels = FALSE,
+                                   zeroline = FALSE,
+                                   domain = c(0.15, 1)),
+                      yaxis = list(title = "",
+                                   showgrid = FALSE,
+                                   showline = FALSE,
+                                   showticklabels = FALSE,
+                                   zeroline = FALSE),
+                      barmode = 'stack',
+                      paper_bgcolor = 'rgb(248, 248, 255)', plot_bgcolor = 'rgb(248, 248, 255)',
+                      margin = list(l = 120, r = 10, t = 140, b = 80),
+                      showlegend = TRUE,
+                      title=list(text="<b>Percentage of each expense type by gender</b>"),
+                      legend=list(title = list(text="<b> Expense type </b>"))) 
+# labeling the y-axis
+percent_type_by_gender <- percent_type_by_gender %>% add_annotations(xref = 'paper', yref = 'y', x = 0.14, y = gender,
+                               xanchor = 'right',
+                               text = gender,
+                               font = list(family = 'Arial', size = 12,
+                                           color = 'rgb(67, 67, 67)'),
+                               showarrow = FALSE, align = 'right') 
+# labeling the percentages of each bar (x_axis)
+percent_type_by_gender <- percent_type_by_gender %>% add_annotations(xref = 'x', yref = 'y',
+                               x = utilities_percent / 2, y = gender,
+                               text = paste(data[,"utilities_percent"]),
+                               font = list(family = 'Arial', size = 12,
+                                           color = 'rgb(248, 248, 255)'),
+                               showarrow = FALSE) 
+percent_type_by_gender <- percent_type_by_gender %>% add_annotations(xref = 'x', yref = 'y',
+                               x = utilities_percent + groceries_percent / 2, y = gender,
+                               text = paste(data[,"groceries_percent"]),
+                               font = list(family = 'Arial', size = 12,
+                                           color = 'rgb(248, 248, 255)'),
+                               showarrow = FALSE) 
+percent_type_by_gender
+```
+
+Figure \@ref(fig:frequency-expense) demonstrates the frequency of purchase for each expense type. It suggests that all members purchased Groceries most frequently. Besides, while four out of six members spent on Utilities second most frequently, others (Eren and Javier Pena) spent on it least frequently. This quite contradicts to conclusion from Figure \@ref(fig:percent-expense-gender), which may results from a higher price of Utilities compared to Groceries.
+
+```{r frequency-expense, fig.cap="Frequency of purchase for each type."}
+# Frequency of expense (grouped by gender and categories) -> heatmap
+expenses_by_identifier_type_count = expenses %>% group_by(identifier, type) %>% summarise(frequency = n()) %>% filter(type != "No spend")
+expenses_frequency_arnald <- c(11, 6, 5, 0)
+expenses_frequency_eren <- c(3, 28, 3, 5)
+expenses_frequency_felix <- c(22, 26, 3, 0)
+expenses_frequency_javier <- c(1, 41, 6, 0)
+expenses_frequency_thyme <- c(10, 12, 9, 0)
+expenses_frequency_phoenix <- c(53, 100, 2, 8)
+expenses_frequency_matrix <- matrix(c(expenses_frequency_arnald, expenses_frequency_phoenix, expenses_frequency_eren, expenses_frequency_felix, expenses_frequency_javier, expenses_frequency_thyme), ncol = 6)
+expenses_frequency_type <- plot_ly(
+  x = c("Arnald", "Phoenix", "Eren", "Felix", "Javier Pena", "Thyme"), y = c("Utilities", "Groceries", "Transportation", "Medical"),
+  z = expenses_frequency_matrix, type = "heatmap"
+) %>% layout(title = list(text = "<b> Frequency of purchase for each type </b>"))
+expenses_frequency_type
+```
+
+## Insights into Moods - Group
+
+```{r}
+# load mood data 
+moods <- read_csv("data/mood.csv")
+
+# reformat date 
+moods$date <- as.Date(moods$date,
+                      format = "%d/%m/%Y")
+
+# categorize mood 
+moods$mood_type[moods$mood <= 4] <- "Existence is futile"
+moods$mood_type[moods$mood >= 5 & moods$mood <= 7] <- "Surviving"
+moods$mood_type[moods$mood >= 7] <- "Blissful life"
+
+# join moods with songs
+songs_moods <- songs %>% inner_join(moods, by = c("date", "identifier"))
+
+# split songs-moods data by identifier
+moods_javier <- filter(moods, identifier=="Javier Pena")
+moods_thyme <- filter(moods, identifier=="Thyme")
+moods_felix <- filter(moods, identifier=="Felix")
+moods_eren <- filter(moods, identifier=="Eren")
+moods_arnald <- filter(moods, identifier=="Arnald")
+moods_phoenix <- filter(moods, identifier=="Phoenix")
+```
+
+Figure \@ref(fig:mood-date) illustrates changes in moods during a month of all members. First, there is no common pattern in mood changes among females or males. However, there is a common pattern in mood changes among Phoenix and Felix, which might be due to their moods being affected by dues (low moods a few days before assignment dues  and high mood after assignment dues). Other members' moods are more table. 
+
+```{r mood-date, fig.cap="Mood vs date"}
+# Mood vs Date (grouped by gender) -> subplot scatter
+mood_through_date <- plot_ly(moods, x = ~date, y = ~identifier, type = "scatter", mode = "markers", marker = list(size = ~mood*2, opacity =0.5), hovertemplate = paste(
+      "<b>Date</b>: %{x}<br>",
+      "<extra></extra>"
+      ))
+mood_through_date %>% layout(title = list(text = "<b> Mood changes</b>"), legend=list(title = list(text="<b>Gender</b>")))
+```
+
+```{r}
+# Song vs mood -> corr (remove Felix)
+songs_moods_javier <- songs_by_date_javier %>% inner_join(moods_javier, by="date")
+cor_songs_moods_javier <- cor(songs_moods_javier$score_by_date, songs_moods_javier$mood)
+
+songs_moods_thyme <- songs_by_date_thyme %>% inner_join(moods_thyme, by="date")
+cor_songs_moods_thyme <- cor(songs_moods_thyme$score_by_date, songs_moods_thyme$mood)
+
+songs_moods_eren <- songs_by_date_eren %>% inner_join(moods_eren, by="date")
+cor_songs_moods_eren <- cor(songs_moods_eren$score_by_date, songs_moods_eren$mood)
+
+songs_moods_arnald <- songs_by_date_arnald %>% inner_join(moods_arnald, by="date")
+cor_songs_moods_arnald <- cor(songs_moods_arnald$score_by_date, songs_moods_arnald$mood)
+
+songs_moods_phoenix <- songs_by_date_phoenix %>% inner_join(moods_phoenix, by="date")
+cor_songs_moods_phoenix <- cor(songs_moods_phoenix$score_by_date, songs_moods_phoenix$mood)
+```
+
+
+Figure \@ref(fig:song-mood-female) displays how females listened to song according to their moods. It can be concluded that females prefer positive songs over other types regardless of their moods, especially on *Blissful life* days. Furthermore, the lower their moods were, the more sad songs they listened to. 
+
+```{r song-mood-female, fig.cap="Percentage of each sentiment by mood type - Female."}
+# Songs vs mood
+songs_moods_by_gender_moodetype_sentiment <- songs_moods[songs_moods$identifier != 'Felix', ] %>% group_by(gender.x, mood_type, sentiment) %>% summarise(count = n())
+
+# female
+mood_types <- c('Surviving', 
+            'Existence is futile',
+            'Blissful life')
+negative_percent_female <- c(44, 41.9, 28)
+neutral_percent_female <-c(0, 3.8, 0)
+positive_percent_female <- c(56, 54.3, 72)
+
+data <- data.frame(mood_types, negative_percent_female, neutral_percent_female, positive_percent_female)
+
+percent_sentiment_by_moodtype_female <- plot_ly(data, name = "Negative", x = ~negative_percent_female, y = ~mood_types, type = 'bar', orientation = 'h',
+                                  marker = list(color = 'rgb(255, 77, 77)',
+                                                line = list(color = 'rgb(248, 248, 249)', width = 1))) 
+percent_sentiment_by_moodtype_female <- percent_sentiment_by_moodtype_female %>% add_trace(name = "Neutral", x = ~neutral_percent_female, marker = list(color = 'rgb(255, 128, 128)')) 
+percent_sentiment_by_moodtype_female <- percent_sentiment_by_moodtype_female %>% add_trace(name = "Positive", x = ~positive_percent_female, marker = list(color = 'rgb(255, 179, 179)')) 
+percent_sentiment_by_moodtype_female <- percent_sentiment_by_moodtype_female %>% layout(xaxis = list(title = "",
+                                                                         showgrid = FALSE,
+                                                                         showline = FALSE,
+                                                                         showticklabels = FALSE,
+                                                                         zeroline = FALSE,
+                                                                         domain = c(0.15, 1)),
+                                                            yaxis = list(title = "",
+                                                                         showgrid = FALSE,
+                                                                         showline = FALSE,
+                                                                         showticklabels = FALSE,
+                                                                         zeroline = FALSE),
+                                                            barmode = 'stack',
+                                                            paper_bgcolor = 'rgb(248, 248, 255)', plot_bgcolor = 'rgb(248, 248, 255)',
+                                                            margin = list(l = 120, r = 10, t = 140, b = 80),
+                                                            showlegend = TRUE,
+                                                            title=list(text="<b>Percentage of each sentiment by mood type - Female</b>"),
+                                                            legend=list(title = list(text="<b> Song sentiment </b>"))) 
+percent_sentiment_by_moodtype_female <- percent_sentiment_by_moodtype_female %>% add_annotations(xref = 'paper', yref = 'y', x = 0.14, y = mood_types,
+                               xanchor = 'right',
+                               text = mood_types,
+                               font = list(family = 'Arial', size = 12,
+                                           color = 'rgb(67, 67, 67)'),
+                               showarrow = FALSE, align = 'right') 
+# labeling the percentages of each bar (x_axis)
+percent_sentiment_by_moodtype_female <- percent_sentiment_by_moodtype_female %>% add_annotations(xref = 'x', yref = 'y',
+                               x = negative_percent_female / 2, y = mood_types,
+                               text = paste(data[,"negative_percent_female"]),
+                               font = list(family = 'Arial', size = 12,
+                                           color = 'rgb(248, 248, 255)'),
+                               showarrow = FALSE) 
+
+percent_sentiment_by_moodtype_female <- percent_sentiment_by_moodtype_female %>% add_annotations(xref = 'x', yref = 'y',
+                               x = negative_percent_female + neutral_percent_female / 2, y = mood_types,
+                               text = paste(data[,"neutral_percent_female"]),
+                               font = list(family = 'Arial', size = 12,
+                                           color = 'rgb(248, 248, 255)'),
+                               showarrow = FALSE) 
+percent_sentiment_by_moodtype_female <- percent_sentiment_by_moodtype_female %>% add_annotations(xref = 'x', yref = 'y',
+                               x = negative_percent_female + neutral_percent_female + positive_percent_female / 2, y = mood_types,
+                               text = paste(data[,"positive_percent_female"]),
+                               font = list(family = 'Arial', size = 12,
+                                           color = 'rgb(248, 248, 255)'),
+                               showarrow = FALSE) 
+
+percent_sentiment_by_moodtype_female
+
+```
+
+On the contrary, Figure \@ref(fig:song-mood-male) suggested that males prefer negative songs over other types no matter how they felt. Overall, there is no considerable change in number of negative, neutral and sad songs they listened to when their moods changed. Moreover, it can be seen that males listened to more neutral songs than famales. 
+
+```{r song-mood-male, fig.cap="Percentage of each sentiment by mood type - Male."}
+negative_percent_male <- c(50.7, 51.6, 51.1)
+neutral_percent_male <-c(4.8, 6.7, 4.7)
+positive_percent_male <- c(44.5, 41.7, 44.2)
+
+data <- data.frame(mood_types, negative_percent_male, neutral_percent_male, positive_percent_male)
+
+percent_sentiment_by_moodtype_male <- plot_ly(data, name = "Negative", x = ~negative_percent_male, y = ~mood_types, type = 'bar', orientation = 'h',
+                                         marker = list(color = 'rgb(0, 128, 255)',
+                                                       line = list(color = 'rgb(248, 248, 249)', width = 1))) 
+percent_sentiment_by_moodtype_male <- percent_sentiment_by_moodtype_male %>% add_trace(name = "Neutral", x = ~neutral_percent_male, marker = list(color = 'rgb(77, 166, 255)')) 
+percent_sentiment_by_moodtype_male <- percent_sentiment_by_moodtype_male %>% add_trace(name = "Positive", x = ~positive_percent_male, marker = list(color = 'rgb(153, 204, 255)')) 
+percent_sentiment_by_moodtype_male <- percent_sentiment_by_moodtype_male %>% layout(xaxis = list(title = "",
+                                                                                       showgrid = FALSE,
+                                                                                       showline = FALSE,
+                                                                                       showticklabels = FALSE,
+                                                                                       zeroline = FALSE,
+                                                                                       domain = c(0.15, 1)),
+                                                                          yaxis = list(title = "",
+                                                                                       showgrid = FALSE,
+                                                                                       showline = FALSE,
+                                                                                       showticklabels = FALSE,
+                                                                                       zeroline = FALSE),
+                                                                          barmode = 'stack',
+                                                                          paper_bgcolor = 'rgb(248, 248, 255)', plot_bgcolor = 'rgb(248, 248, 255)',
+                                                                          margin = list(l = 120, r = 10, t = 140, b = 80),
+                                                                          showlegend = TRUE,
+                                                                          title=list(text="<b>Percentage of each sentiment by mood type - Male</b>"),
+                                                                          legend=list(title = list(text="<b> Song sentiment </b>"))) 
+percent_sentiment_by_moodtype_male <- percent_sentiment_by_moodtype_male %>% add_annotations(xref = 'paper', yref = 'y', x = 0.14, y = mood_types,
+                                                                                   xanchor = 'right',
+                                                                                   text = mood_types,
+                                                                                   font = list(family = 'Arial', size = 12,
+                                                                                               color = 'rgb(67, 67, 67)'),
+                                                                                   showarrow = FALSE, align = 'right') 
+# labeling the percentages of each bar (x_axis)
+percent_sentiment_by_moodtype_male <- percent_sentiment_by_moodtype_male %>% add_annotations(xref = 'x', yref = 'y',
+                               x = negative_percent_male / 2, y = mood_types,
+                               text = paste(data[,"negative_percent_male"]),
+                               font = list(family = 'Arial', size = 12,
+                                           color = 'rgb(248, 248, 255)'),
+                               showarrow = FALSE) 
+percent_sentiment_by_moodtype_male <- percent_sentiment_by_moodtype_male %>% add_annotations(xref = 'x', yref = 'y',
+                               x = negative_percent_male + neutral_percent_male / 2, y = mood_types,
+                               text = paste(data[,"neutral_percent_male"]),
+                               font = list(family = 'Arial', size = 12,
+                                           color = 'rgb(248, 248, 255)'),
+                               showarrow = FALSE) 
+percent_sentiment_by_moodtype_male <- percent_sentiment_by_moodtype_male %>% add_annotations(xref = 'x', yref = 'y',
+                               x = negative_percent_male + neutral_percent_male + positive_percent_male / 2, y = mood_types,
+                               text = paste(data[,"positive_percent_male"]),
+                               font = list(family = 'Arial', size = 12,
+                                           color = 'rgb(248, 248, 255)'),
+                               showarrow = FALSE) 
+
+percent_sentiment_by_moodtype_male
+```
+
+It has been always assumed that sentiment of songs people listen to is affected by their emotions. However, Figure \@ref(fig:mood-expense-song-corr) demonstrates that song sentiments and a listener's moods are not positively correlated. Besides, according to Mind (2022), people tend to overspend to feel better but Figure \@ref(fig:mood-expense-song-corr) indicates a low correlation between expense amount and moods.  
+
+```{r mood-expense-song-corr, fig.cap="Correlation between mood and song/expense."}
+# Expense amount vs mood (gender): cor
+expenses_moods_javier <- expenses_by_date[expenses_by_date$identifier == "Javier Pena", ] %>% inner_join(moods_javier, by="date")
+cor_expenses_moods_javier <- cor(expenses_moods_javier$total_amount, expenses_moods_javier$mood)
+
+expenses_moods_felix <- expenses_by_date[expenses_by_date$identifier == "Felix", ] %>% inner_join(moods_felix, by="date")
+cor_expenses_moods_felix <- cor(expenses_moods_felix$total_amount, expenses_moods_felix$mood)
+
+expenses_moods_thyme <- expenses_by_date[expenses_by_date$identifier == "Thyme", ] %>% inner_join(moods_thyme, by="date")
+cor_expenses_moods_thyme <- cor(expenses_moods_thyme$total_amount, expenses_moods_thyme$mood)
+
+expenses_moods_eren <- expenses_by_date[expenses_by_date$identifier == "Eren", ] %>% inner_join(moods_eren, by="date")
+cor_expenses_moods_eren <- cor(expenses_moods_eren$total_amount, expenses_moods_eren$mood)
+
+expenses_moods_arnald <- expenses_by_date[expenses_by_date$identifier == "Arnald", ] %>% inner_join(moods_arnald, by="date")
+cor_expenses_moods_arnald <- cor(expenses_moods_arnald$total_amount, expenses_moods_arnald$mood)
+
+expenses_moods_phoenix <- expenses_by_date[expenses_by_date$identifier == "Phoenix", ] %>% inner_join(moods_phoenix, by="date")
+cor_expenses_moods_phoenix <- cor(expenses_moods_phoenix$total_amount, expenses_moods_phoenix$mood)
+
+
+correlation_plot <- plot_ly(
+  type = 'table',
+  header = list(
+    values = c('<b>Identifier</b>', '<b>Song sentiment vs Mood</b>','<b>Expenses vs Mood</b>'),
+    line = list(color = '#506784'),
+    fill = list(color = '#119DFF'),
+    align = c('left','center'),
+    font = list(color = 'white', size = 12)
+  ),
+  cells = list(
+    values = rbind(
+      c('Javier Pena', 'Arnald', 'Thyme', 'Eren', 'Phoenix'),
+      c(cor_songs_moods_javier, cor_songs_moods_arnald, cor_songs_moods_thyme, cor_songs_moods_eren, cor_songs_moods_phoenix),
+      c(cor_expenses_moods_javier, cor_expenses_moods_arnald, cor_expenses_moods_thyme, cor_expenses_moods_eren, cor_expenses_moods_phoenix)),
+    line = list(color = '#506784'),
+    fill = list(color = c('#25FEFD', 'white')),
+    align = c('left', 'center'),
+    font = list(color = c('#506784'), size = 12)
+  )) %>% 
+  layout(title = list(text = "<b>Correlation table</b>"))
+
+correlation_plot
+```
+
+## Insights into song variables - Individual
+
+```{r}
+individual_songs <- read_csv("data/individual_music.csv")
+individual_songs$date <- as.Date(individual_songs$date,
+                      format = "%d/%m/%Y")
+```
+
+Figure \@ref(fig:individual-vars-moods-corr) and Figure \@ref(fig:individual-vars-moods) reveal that mood and song valence are significantly correlated. Because Spotify valence is known as song sentiment, this result was different from the finding in Figure \@ref(fig:mood-expense-song-corr) which shows a slight correlation - 0.3. There are two reasons for this situation: 1. either valence or sentiment analysis is inaccurate, 2. Songs collected per day do not represent the listener's mood. Besides, there is only a moderate relation between mood and danceability/energy and no relation between mood and loudness.  Therefore, it suggests that other song's features such as danceability, energy, etc. relates to user moods. These variables are particular helpful for songs without lyrics. 
+
+```{r individual-vars-moods-corr, fig.cap="Correlation between song variables and moods."}
+# cor
+individual_songs_moods <- individual_songs %>% inner_join(moods[moods$identifier == "Phoenix",], by="date")
+individual_songs_numeric_moods <- individual_songs_moods %>% select(-c(1, 2, 8, 9, 10))
+M = cor(individual_songs_numeric_moods)
+corr_song_vars <- corrplot(M, title = "Correlation plot for song variables", type = 'lower', order = 'hclust', tl.col = 'black',
+         cl.ratio = 0.2, tl.srt = 45, col = COL2('PuOr', 10))
+```
+
+
+```{r individual-vars-moods, fig.cap="Moods vs positively correlated variables."}
+# line chart
+individual_songs_moods_by_date <- individual_songs_moods %>% group_by(date, mood) %>% 
+  summarise(sum_valence = sum(valence),
+            sum_danceability = sum(danceability),
+            sum_energy = sum(energy),
+            sum_loudness = sum(loudness)) %>%
+  ungroup()
+song_valence_moods <- plot_ly(individual_songs_moods_by_date, x = ~date) %>% layout(yaxis = list(title = list(text = "")), showlegend = TRUE)
+song_valence_moods <- song_valence_moods %>% add_trace(y = ~individual_songs_moods_by_date$mood, name = 'mood', type = 'scatter',  mode = 'lines', line=list(color='rgb(0,0,255)',dash='dashed'))
+song_valence_moods <- song_valence_moods %>% add_trace(y = ~individual_songs_moods_by_date$sum_valence, name = 'valence', type = 'scatter',  mode = 'lines')
+
+song_danceability_moods <- plot_ly(individual_songs_moods_by_date, x = ~date) %>% layout(yaxis = list(title = list(text = "")), showlegend = TRUE)
+song_danceability_moods <- song_danceability_moods %>% add_trace(y = ~individual_songs_moods_by_date$mood, name = 'mood', type = 'scatter',  mode = 'lines', line=list(color='rgb(0,0,255)',dash='dashed'))
+song_danceability_moods <- song_danceability_moods %>% add_trace(y = ~individual_songs_moods_by_date$sum_danceability, name = 'danceability', type = 'scatter',  mode = 'lines')
+
+song_energy_moods <- plot_ly(individual_songs_moods_by_date, x = ~date) %>% layout(yaxis = list(title = list(text = "")), showlegend = TRUE)
+song_energy_moods <- song_energy_moods %>% add_trace(y = ~individual_songs_moods_by_date$mood, name = 'mood', type = 'scatter',  mode = 'lines', line=list(color='rgb(0,0,255)',dash='dashed'))
+song_energy_moods <- song_energy_moods %>% add_trace(y = ~individual_songs_moods_by_date$sum_energy, name = 'energy', type = 'scatter',  mode = 'lines')
+
+song_vars_moods <- subplot(song_valence_moods, song_danceability_moods, song_energy_moods, nrows = 3, titleY = TRUE, titleX = FALSE, margin = 0.1) %>%
+  layout(title = list(text = "<b> Spotify valence/danceability/energy vs mood </b>"), 
+         annotations = list( 
+            list( 
+              x = 0.1,  
+              y = 1.0,  
+              text = "<b> Valence vs Mood </b>",  
+              xref = "paper",  
+              yref = "paper",  
+              xanchor = "center",  
+              yanchor = "bottom",  
+              showarrow = FALSE 
+            ),  
+            list( 
+              x = 0.1,  
+              y = 0.6,  
+              text = "<b> Danceability vs Mood </b>",  
+              xref = "paper",  
+              yref = "paper",  
+              xanchor = "center",  
+              yanchor = "bottom",  
+              showarrow = FALSE 
+            ),
+            list( 
+              x = 0.1,  
+              y = 0.25,  
+              text = "<b> Energy vs Mood </b>",  
+              xref = "paper",  
+              yref = "paper",  
+              xanchor = "center",  
+              yanchor = "bottom",  
+              showarrow = FALSE 
+            )
+          ))
+song_vars_moods
+```
+
+## Insights into External co-hort data
+
+A research analysing Spotify data found that men are aged 13-16 when their favorite song is released, and for women, it’s age 11-14. The research concluded that regardless of gender, people are likely to stick to music they listened to the earliest phase of the adolescence. This finding, however, is different from what we found in our project. 
+
+```{r music-preference-age, fig.cap= "Music preference peak vs age."}
+knitr::include_graphics(here::here("AT2_default_template/data/release_date_age.png"), dpi = NA)
+```
+
+Figure \@ref(fig:au-weekly-expense) presents average weekly expenditure of a lone person under 35 in New South Wales. Unlike the finding in Figure \@ref(fig:percent-expense-gender), it is shown that people in NSW spent most on Utilities instead of Groceries. However, transportation and medical still keep their position of being the second least and least spent type. 
+
+```{r au-weekly-expense, fig.cap="Average weekly expenditure of a lone person under 35 in NSW."}
+lone_under_35_weekly_expense <- read_csv("data/lone_under_35_weekly_expense.csv")
+
+# group type of ultilities, groceries, transportation, and medical 
+lone_under_35_weekly_expense[c(1, 2, 6, 7, 8, 11, 12, 13),]$type <- "Ultilities"
+lone_under_35_weekly_expense[c(3, 4, 5, 14, 15),]$type <- "Groceries"
+lone_under_35_weekly_expense[10,]$type <- "Transportation"
+lone_under_35_weekly_expense[9,]$type <- "Medical"
+
+lone_under_35_weekly_expense_plot <- plot_ly(lone_under_35_weekly_expense,
+  x = ~type,
+  y = ~amount,
+  type = "bar",
+  color = ~type
+) %>% layout(title = list(text =  "<b>Average weekly expenditure of a lone person under 35 in NSW</b>"))
+
+
+lone_under_35_weekly_expense_plot
+```
+
+# Evaluation, Discussion, and Conclusions
+
+The intention of this project is to find patterns in song listening, spending, and moods, as well as their relation. Therefore, various types of stakeholders that might be involved including e-commerce companies, music streaming companies, etc. In this section, different frameworks are applied to identify current issues as well as potential issues that can arise when project is conducted at larger scale.
+
+## Legalities and Privacy
+
+Australian Privacy Principles (APP) is applied to evaluate Legalities and Privacy aspect of this project.
+The APP regulates how personal data should be handled, whether or not the data is accurate. Personal data also includes personal tastes, preferences, transaction history, music listening history, etc. Therefore, data usage in this project is subject to Privacy Act. However, the project does not fall under regulations of APP because it was conducted by a small group, not a business with over $3M revenue. 
+
+Imagining that the project is conducted at larger scale, compliance of the project with APP is checked in details in Appendix B. In summary, the project complies fully with 11/13 principles and partially complies with 2/13 principles. First, the project does not fully comply with APP 1 because the team did not take the APP into account throughout the project, thereby not establishing transparent practices, procedures, and systems to explicitly ensure our compliance with other APPs. However, the team already considered legal and privacy issues, therefore, apply several practices that align with other APPs. Second, APP 11 is not fully complied due to the risk of data loss and unauthorised modification: there is only one Google Sheet file collecting all data points and a member can intentionally/accidentally modify others' records. 
+Lastly, it should be noted that the project does not violate APP 7 because the project uses de-identified dataset that does not contain any email, phone numbers, or addresses. Besides, the stakeholders are expected to recommend their products via their users' web page instead of direct communication via SMS, telephone, email, etc. 
+
+There are several strategies which could have been done to address the above misconduct. First, the team should have investigated into legalities then selected specific frameworks, law cases, etc. to apply throughout the project. For example, to comply with APP 1, the team needs to agree on using APP as a legal guidline, then establish clear process of maintaining APPs. Second, to prevent data loss, there should have been several backups, which can be stored in different secured platforms such as Drive, Dropbox, AWS, or Azure. This practice prevents losing data due to unexpected infrastructure destruction of any repository. Third, unauthorized modification could have been prevented by making backup read-only. Team members are only allowed to edit one dataset for data correction purpose, other backups are all read-only. 
+
+The project also uses data from third-party including Commonwealth Bank (transaction data) and Spotify (song data). There has always been a controversy over how applications deliver their terms and conditions. Citizen Advice reports that only 1% of people reading terms and conditions fully, which raised a significant concern about privacy (Ketchell, 2016). Wordy and unclear documents prevent users from being fully informed of their contract with providers. As the result, they do not acknowledge how their data is controlled or traded. 
+
+## Ethics
+
+Not everything that is legal is ethical. Unlike legal principles, data ethics are established to evaluate potentially adverse impact of data practices on people society, thereby defining good practices for collecting, analysing, and sharing data. Open Data Institute’s Data Ethics Canvas (Appendix C) is the framework used for evaluating ethical aspects of this project. 
+
+Apart from ethical considerations in ODI, there are also several ethical issues around using users' emotion for recommendation. In Jan 2021, Spotify was granted patent to use speech recognition to identify users' feelings as a way to recommend songs. However, this innovation was strongly disapproved by nearly 200 musicians, bands, and civil rights groups due to concerns about monitoring people's emotions, or even worse, manipulating them (Schwartz, 2021). With power of AI's algorithm, detecting or altering human emotions via songs is no longer fictitious. Not only Spotify, other companies such as Amazon, Toyota, Cerene, etc. also have patent for similar functionality. Additionally, without a public and transparent explanation for their technology, we do not know what kind "voice" captured by this technology. Is it just a sound or a normal conversation ? If it is the latter, these companies are likely to violate privacy principles.
+
+## Limitations, Future Work, Reflection
+
+During the project, there are several difficulties that I encountered. 
+
+First, as mentioned above, due to lack of song lyrics, Felix's songs are removed from sentiment analysis. However, this removal is not an optimal solution because the data is still valuable and findings could have been different if it had been included. This situation is also likely to happen in wider data science practice because music can be either instrumental or lyrical. Findings in *Insights into song variables* indicated a strong relation between mood and Spotify variables. Therefore, these variables can be replaced with lyrics in sentiment analysis, which avoids unnecessary data exclusion. 
+
+Second, the project should have been assessed using more Legal, Privacy and Ethical Frameworks, especially when it is conducted by organisation. For example, if stakeholder is a multinational company who collects data of citizens over the world, laws of different countries must be now considered.
+
+Third, there is a concern about inaccurate findings due to lack of data. All data science projects need large enough sample to guarantee the reliability and greater precision of result. In this project, lack of data issue is caused by two main reasons: short period of time and manual log. In a larger project, data collecting should continue until it reaches certain data points. Besides, automated data collection is recommended due to its ease of collecting large data. For wider data science project, technologies such as Snowflake, Spark, Hadoop, etc. are commonly-used for data management and processing. Tools such as Excel or Drive is not preferable for data science projects.
+
+# References
+
+Lee, & Hosanagar, K. (2019). How Do Recommender Systems Affect Sales Diversity? A Cross-Category Investigation via Randomized Field Experiment. Information Systems Research, 30(1), 239–259. https://doi.org/10.1287/isre.2018.0800
+ 
+Stassen, M. (2021, January 27). Spotify’s Latest Invention Monitors Your Speech, Determines Your Emotional State… And Suggests Music Based On It. Music Business Worldwide. https://www.musicbusinessworldwide.com/spotifys-latest-invention-will-determine-your-emotional-state-from-your-speech-and-suggest-music-based-on-it/
+
+Yanofsky, D. 2018, The Quartz guide to bad data, Github, viewed June 6, 2020, https://github.com/Quartz/bad-data-guide.
+
+Moore, S. (2018). How to Create a Business Case for Data Quality Improvement. Gartner. www.gartner.com/smarterwithgartner/how-to-create-a-business-case-for-data-quality-improvement/.
+
+IBM. (2018). Extracting Business Value From The 4 Vs of Big Data. https://www.ibmbigdatahub.com/infographic/extracting-business-value-4-vs-big-data.
+
+Weitzel, L., Prati, R., & Aguiar, R. (2016). The Comprehension of Figurative Language: What Is the Influence of Irony and Sarcasm on NLP Techniques?. 10.1007/978-3-319-30319-2_3
+
+Silge, J, & Robinson, D. (2022). Text Mining with R: A Tidy Approach. O’Reilly.
+
+Mohammad, S. M. (2017). Challenges in Sentiment Analysis. A Practical Guide to Sentiment Analysis, (61-83). 10.1007/978-3-319-55394-8_4. 
+
+Roldós, I. (2020, December 23). Major Challenges of Natural Language Processing (NLP). Monkey Learn. https://monkeylearn.com/blog/natural-language-processing-challenges/
+
+Ferjan, M. (2022, August 19). 30+ Official Listening to Music Statistics. Headphones Addict. https://headphonesaddict.com/listening-to-music-statistics/
+
+Schwartz, D., Fischhoff, B., Krishnamurti, T., & Sowell, F. (2013). The Hawthorne Effect and Energy Awareness. Proc Natl Acad Sci U S A, 110(38), 15242–15246. 10.1073/pnas.1301687110
+
+Davies, C., Page, B., Driesener, C. et al. (2022). The Power of Nostalgia: Age and Preference For Popular Music. Mark Lett. https://doi.org/10.1007/s11002-022-09626-7
+
+Stephen-Davidowitz, S. (2018, February 10). Opinion: The Songs That Bind. The New York Times. https://www.nytimes.com/2018/02/10/opinion/sunday/favorite-songs.html
+
+Stern, M. J. (2014, August 12). Neural Nostalgia: Why Do We Love The Music We Heard As Teenagers?. Slate. https://slate.com/technology/2014/08/musical-nostalgia-the-psychology-and-neuroscience-for-song-preference-and-the-reminiscence-bump.html#:~:text=And%20researchers%20have%20uncovered%20evidence,t%20weaken%20as%20we%20age.
+
+Ong, T. (2018, February 2). Our Musical Tastes Peak As Teens, Says Study. The Verge. https://www.theverge.com/2018/2/12/17003076/spotify-data-shows-songs-teens-adult-taste-music
+
+Stephens-Davidowitz, S. (n.d.). Research. Sethsd. http://sethsd.com/research
+
+Xu, L., Zheng, Y., Xu, D., & Xu, L. (2021). Predicting the Preference for Sad Music: The Role of Gender, Personality, and Audio Features. IEEE Access. 1-1. 10.1109/ACCESS.2021.3090940. 
+
+Library. (n.d.). 6.2. The Evolution of Popular Music. https://open.lib.umn.edu/mediaandculture/chapter/6-2-the-evolution-of-popular-music/
+
+Mind. (2022 April). The Link Between Money and Mental Health. https://www.mind.org.uk/information-support/tips-for-everyday-living/money-and-mental-health/the-link-between-money-and-mental-health/#mental-health-can-affect-money
+
+AIAAIC. (n.d.). About the AIA Repository. https://www.aiaaic.org/aiaaic-repository/about-the-aiaaic-repository
+
+Ketchell, M. (2016, July 15). Never Read The Terms and Conditions? Here’s An Idea That Might Protect Your Online Privacy. The Conversation. https://theconversation.com/never-read-the-terms-and-conditions-heres-an-idea-that-might-protect-your-online-privacy-62208
+
+Thornhill, J. (2016, January 20). Brave New Era In Technology Needs New Ethics. Financial Times. https://www.ft.com/content/dd328bf4-a25e-11e5-8d70-42b68cfae6e4
+
+Office of The Australian Information Commissioner. (n.d.). Australian Privacy Principles Quick Reference. https://www.oaic.gov.au/privacy/australian-privacy-principles/australian-privacy-principles-quick-reference
+
+Schwartz, E. H. (2021, May 7). Musicians Demand Spotify Not Develop Emotional Speech Recognition Patent. Voicebot. https://voicebot.ai/2021/05/07/musicians-demand-spotify-not-develop-emotional-speech-recognition-patent/
+
+Davie, O. (2021, October 2). Spotify Patents Tech To Monitor Your Speech, Infer Emotion. HypeBot. https://www.hypebot.com/hypebot/2021/02/spotify-patents-tech-to-monitor-your-speech-infer-emotion.html
+
+Australian Bureau of Statistics. (2015-16). Household Expenditure Survey, Australia: Summary of Results. ABS. https://www.abs.gov.au/statistics/economy/finance/household-expenditure-survey-australia-summary-results/latest-release.
+
+Stephens-Davidowitz, S. (n.d.). Research. Sethsd. http://sethsd.com/research
+
+# Appendices {#AT2def_appendices}
+
+## Appendix A: Data sample
+
+**Songs - Group**
+
+```{r warning = FALSE, message = FALSE}
+print(songs, n = 8)
+```
+
+**Expenses - Group**
+
+```{r warning = FALSE, message = FALSE}
+print(expenses, n = 8)
+```
+
+**Moods - Group**
+
+```{r warning = FALSE, message = FALSE}
+print(moods, n = 8)
+```
+
+**Song variables - Individual**
+
+```{r warning = FALSE, message = FALSE}
+print(individual_songs, n = 8)
+```
+
+## Appendix B: Project alignment with APP
+| **Principle** | **Title**                                                         | **Purpose**                                                                                                                                                                                                                                                                                                                                        | **Compliance** |
+|---------------|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------|
+| APP 1         | Open and transparent management <br>of personal information       | Ensures that APP entities manage personal information in an open and transparent way. <br>This includes having a clearly expressed and up to date APP <br>privacy policy.                                                                                                                                                                          | Partially      |
+| APP 2         | Anonymity and pseudonymity                                        | Requires APP entities to give individuals the option of not identifying<br>themselves, or of using a pseudonym. Limited exceptions apply.                                                                                                                                                                                                          | Yes            |
+| APP 3         | Collection of solicited <br>personal information                  | Outlines when an APP entity can collect personal information that is solicited.<br>It applies higher standards to the collection of ‘sensitive’ information.                                                                                                                                                                                       | Yes            |
+| APP 4         | Dealing with unsolicited <br>personal information                 | Outlines how APP entities must deal with unsolicited personal information.                                                                                                                                                                                                                                                                         | Yes            |
+| APP 5         | Notification of the collection<br>of personal information         | Outlines when and in what circumstances an APP entity that collects<br>personal information must notify an individual of certain matters.                                                                                                                                                                                                          | Yes            |
+| APP 6         | Use or disclosure <br>of personal information                     | Outlines the circumstances in which an APP entity may use or disclose<br>personal information that it holds.                                                                                                                                                                                                                                       | Yes            |
+| APP 7         | Direct marketing                                                  | An organisation may only use or disclose personal information for direct<br>marketing purposes if certain conditions are met.                                                                                                                                                                                                                      | Yes            |
+| APP 8         | Cross-border disclosure <br>of personal information               | Outlines the steps an APP entity must take to protect personal information<br>before it is disclosed overseas.                                                                                                                                                                                                                                     | Yes            |
+| APP 9         | Adoption, use or disclosure <br>of government related identifiers | Outlines the limited circumstances when an organisation may adopt a<br>government related identifier of an individual as its own identifier, or use<br>or disclose a government related identifier of an individual.                                                                                                                               | Yes            |
+| APP 10        | Quality of personal information                                   | An APP entity must take reasonable steps to ensure the personal information<br>it collects is accurate, up to date and complete. An entity must also take<br>reasonable steps to ensure the personal information it uses or discloses is<br>accurate, up to date, complete and relevant, having regard to the purpose of<br>the use or disclosure. | Yes            |
+| APP 11        | Security of personal information                                  | An APP entity must take reasonable steps to protect personal information<br>it holds from misuse, interference and loss, and from unauthorised access,<br>modification or disclosure. An entity has obligations to destroy or de-identify<br>personal information in certain circumstances.                                                        | Partially      |
+| APP 12        | Access to personal information                                    | Outlines an APP entity’s obligations when an individual requests to be given<br>access to personal information held about them by the entity. This includes<br>a requirement to provide access unless a specific exception applies.                                                                                                                | Yes            |
+| APP 13        | Correction of personal information                                | Outlines an APP entity’s obligations in relation to correcting the personal<br>information it holds about individuals.                                                                                                                                                                                                                             | Yes            |
+
+
+## Appendix C: ODI Data Ethics Canvas {#AT2def_ODI}
+
+```{r add_ODI_pdf, out.width="100%", out.height="500px"}
+knitr::include_graphics(here::here("/Users/nguyenthao/Desktop/UTS/DSI/DSI_ODI_Data_Ethics_Canvas_2018.pdf"))
+
+```
+
+## Appendix D: 
+
+```{r}
+expenses_raw <- read_csv("data/expense.csv")
+expenses_raw %>% distinct(type)
+```
+
+## Appendix E: 
+
+```{r warning = FALSE, message = FALSE}
+songs_raw <- read_csv("data/music.csv")
+songs_raw$date <- as.Date(songs_raw$date,
+                    format = "%d/%m/%Y")
+print(songs_raw[songs_raw$date <= "2022-01-01", ], n = 5)
+```
+
+## Appendix F:
+
+```{r warning = FALSE, message = FALSE}
+songs_raw$release_date <- as.Date(songs_raw$release_date,
+                    format = "%d/%m/%Y")
+songs_raw[songs_raw$release_date >= "2022-12-31", c(-7)]
+```
+
